@@ -21,8 +21,20 @@ async def test_get_all_items(mock_jenkins, mocker):
     ]
 
     assert await item.get_all_items(mocker.Mock()) == [
-        {'class_': 'Job', 'color': 'blue', 'fullname': 'job1', 'name': 'job1', 'url': '1'},
-        {'class_': 'Folder', 'fullname': 'job2', 'jobs': [], 'name': 'folder', 'url': '1'},
+        {
+            'class_': 'Job',
+            'color': 'blue',
+            'fullname': 'job1',
+            'name': 'job1',
+            'url': '1',
+        },
+        {
+            'class_': 'Folder',
+            'fullname': 'job2',
+            'jobs': [],
+            'name': 'folder',
+            'url': '1',
+        },
     ]
 
 
@@ -62,9 +74,18 @@ async def test_query_items(mock_jenkins, mocker):
     ]
 
     assert await item.query_items(
-        mocker.Mock(), class_pattern='.*', fullname_pattern='job.*', color_pattern='blue'
+        mocker.Mock(),
+        class_pattern='.*',
+        fullname_pattern='job.*',
+        color_pattern='blue',
     ) == [
-        {'class_': 'Job', 'color': 'blue', 'fullname': 'job1', 'name': 'job1', 'url': '1'},
+        {
+            'class_': 'Job',
+            'color': 'blue',
+            'fullname': 'job1',
+            'name': 'job1',
+            'url': '1',
+        },
     ]
 
 
@@ -72,7 +93,12 @@ async def test_query_items(mock_jenkins, mocker):
 async def test_build_item(mock_jenkins, mocker):
     mock_jenkins.build_item.return_value = None
 
-    await item.build_item(mocker.Mock(), fullname='job1', params={'param1': 'value1'}, build_type='buildWithParameters')
+    await item.build_item(
+        mocker.Mock(),
+        fullname='job1',
+        params={'param1': 'value1'},
+        build_type='buildWithParameters',
+    )
 
     mock_jenkins.build_item.assert_called_once_with(
         fullname='job1', params={'param1': 'value1'}, build_type='buildWithParameters'

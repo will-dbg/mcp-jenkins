@@ -52,20 +52,34 @@ async def get_build_scripts(ctx: Context, fullname: str, number: int | None = No
 
 
 @mcp.tool(tags=['read'])
-async def get_build_console_output(ctx: Context, fullname: str, number: int | None = None) -> str:
+async def get_build_console_output(
+    ctx: Context,
+    fullname: str,
+    number: int | None = None,
+    pattern: str | None = None,
+    offset: int = 0,
+    limit: int | None = None,
+) -> str:
     """Get the console output of a specific build in Jenkins
 
     Args:
         fullname: The fullname of the job
         number: The number of the build, if None, get the last build
+        pattern: Optional regex pattern to filter lines (only matching lines are returned)
+        offset: Number of lines to skip from the beginning after filtering, default 0
+        limit: Maximum number of lines to return after filtering and offset
 
     Returns:
         The console output of the build
     """
     if number is None:
         number = jenkins(ctx).get_item(fullname=fullname, depth=1).lastBuild.number
+    if number is None:
+        raise ValueError(f'No build found for job: {fullname}')
 
-    return jenkins(ctx).get_build_console_output(fullname=fullname, number=number)
+    return jenkins(ctx).get_build_console_output(
+        fullname=fullname, number=number, pattern=pattern, offset=offset, limit=limit
+    )
 
 
 @mcp.tool(tags=['read'])

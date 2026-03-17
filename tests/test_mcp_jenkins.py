@@ -24,7 +24,10 @@ def test_main_streamable_http(mocker):
     mocker.patch('mcp_jenkins.asyncio')
     mock_mcp = mocker.patch('mcp_jenkins.server.mcp')
 
-    CliRunner().invoke(main, ['--transport', 'streamable-http', '--host', '127.0.0.1', '--port', '9887'])
+    CliRunner().invoke(
+        main,
+        ['--transport', 'streamable-http', '--host', '127.0.0.1', '--port', '9887'],
+    )
     mock_mcp.run_async.assert_called_once_with(transport='streamable-http', host='127.0.0.1', port=9887)
 
 

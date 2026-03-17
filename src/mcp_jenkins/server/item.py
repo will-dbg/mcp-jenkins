@@ -83,7 +83,10 @@ async def query_items(
 
 @mcp.tool(tags=['write'])
 async def build_item(
-    ctx: Context, fullname: str, build_type: Literal['build', 'buildWithParameters'], params: dict = None
+    ctx: Context,
+    fullname: str,
+    build_type: Literal['build', 'buildWithParameters'],
+    params: dict = None,
 ) -> int:
     """Build an item in Jenkins
 

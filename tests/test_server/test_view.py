@@ -33,8 +33,16 @@ async def test_get_view(mock_jenkins, mocker):
     mock_jenkins.get_view.return_value = {
         'name': 'frontend',
         'jobs': [
-            {'name': 'build-ui', 'url': 'https://example.com/job/build-ui/', 'color': 'blue'},
-            {'name': 'lint-check', 'url': 'https://example.com/job/lint-check/', 'color': 'red'},
+            {
+                'name': 'build-ui',
+                'url': 'https://example.com/job/build-ui/',
+                'color': 'blue',
+            },
+            {
+                'name': 'lint-check',
+                'url': 'https://example.com/job/lint-check/',
+                'color': 'red',
+            },
         ],
     }
 
@@ -43,8 +51,16 @@ async def test_get_view(mock_jenkins, mocker):
     assert result == {
         'name': 'frontend',
         'jobs': [
-            {'name': 'build-ui', 'url': 'https://example.com/job/build-ui/', 'color': 'blue'},
-            {'name': 'lint-check', 'url': 'https://example.com/job/lint-check/', 'color': 'red'},
+            {
+                'name': 'build-ui',
+                'url': 'https://example.com/job/build-ui/',
+                'color': 'blue',
+            },
+            {
+                'name': 'lint-check',
+                'url': 'https://example.com/job/lint-check/',
+                'color': 'red',
+            },
         ],
     }
     mock_jenkins.get_view.assert_called_once_with(view_path='frontend', depth=0)
@@ -71,7 +87,13 @@ async def test_get_view_nested(mock_jenkins, mocker):
 async def test_get_view_with_depth(mock_jenkins, mocker):
     mock_jenkins.get_view.return_value = {
         'name': 'frontend',
-        'jobs': [{'name': 'build-ui', 'url': 'https://example.com/job/build-ui/', 'color': 'blue'}],
+        'jobs': [
+            {
+                'name': 'build-ui',
+                'url': 'https://example.com/job/build-ui/',
+                'color': 'blue',
+            }
+        ],
     }
 
     await view.get_view(mocker.Mock(), view_path='frontend', depth=1)

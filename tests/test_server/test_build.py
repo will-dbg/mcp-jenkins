@@ -43,7 +43,10 @@ async def test_get_build_scripts(mock_jenkins, mocker):
     mock_jenkins.get_item.return_value.lastBuild.number = 1
     mock_jenkins.get_build_replay.return_value = BuildReplay(scripts=['script1', 'script2'])
 
-    assert await build.get_build_scripts(mocker.Mock(), fullname='job1') == ['script1', 'script2']
+    assert await build.get_build_scripts(mocker.Mock(), fullname='job1') == [
+        'script1',
+        'script2',
+    ]
 
 
 @pytest.mark.asyncio
@@ -52,6 +55,41 @@ async def test_get_build_console_output(mock_jenkins, mocker):
     mock_jenkins.get_build_console_output.return_value = 'Console output here'
 
     assert await build.get_build_console_output(mocker.Mock(), fullname='job1') == 'Console output here'
+    mock_jenkins.get_build_console_output.assert_called_once_with(
+        fullname='job1', number=1, pattern=None, offset=0, limit=None
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_build_console_output_with_number(mock_jenkins, mocker):
+    mock_jenkins.get_build_console_output.return_value = 'output'
+
+    assert await build.get_build_console_output(mocker.Mock(), fullname='job1', number=5) == 'output'
+    mock_jenkins.get_item.assert_not_called()
+    mock_jenkins.get_build_console_output.assert_called_once_with(
+        fullname='job1', number=5, pattern=None, offset=0, limit=None
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_build_console_output_with_all_params(mock_jenkins, mocker):
+    mock_jenkins.get_build_console_output.return_value = 'ERROR: boom'
+
+    result = await build.get_build_console_output(
+        mocker.Mock(), fullname='job1', number=3, pattern='ERROR', offset=1, limit=10
+    )
+    assert result == 'ERROR: boom'
+    mock_jenkins.get_build_console_output.assert_called_once_with(
+        fullname='job1', number=3, pattern='ERROR', offset=1, limit=10
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_build_console_output_no_build(mock_jenkins, mocker):
+    mock_jenkins.get_item.return_value.lastBuild.number = None
+
+    with pytest.raises(ValueError, match='No build found for job: job1'):
+        await build.get_build_console_output(mocker.Mock(), fullname='job1')
 
 
 @pytest.mark.asyncio
@@ -67,7 +105,10 @@ async def test_get_build_parameters(mock_jenkins, mocker):
     mock_jenkins.get_item.return_value.lastBuild.number = 1
     mock_jenkins.get_build_parameters.return_value = {'BRANCH': 'main', 'DEBUG': True}
 
-    assert await build.get_build_parameters(mocker.Mock(), fullname='job1') == {'BRANCH': 'main', 'DEBUG': True}
+    assert await build.get_build_parameters(mocker.Mock(), fullname='job1') == {
+        'BRANCH': 'main',
+        'DEBUG': True,
+    }
 
 
 @pytest.mark.asyncio

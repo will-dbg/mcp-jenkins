@@ -3,15 +3,28 @@ from requests import HTTPError
 
 from mcp_jenkins.jenkins import Jenkins
 from mcp_jenkins.jenkins.model.build import Build, BuildReplay
-from mcp_jenkins.jenkins.model.item import Folder, FreeStyleProject, Job, MultiBranchProject
-from mcp_jenkins.jenkins.model.node import Node, NodeExecutor, NodeExecutorCurrentExecutable
+from mcp_jenkins.jenkins.model.item import (
+    Folder,
+    FreeStyleProject,
+    Job,
+    MultiBranchProject,
+)
+from mcp_jenkins.jenkins.model.node import (
+    Node,
+    NodeExecutor,
+    NodeExecutorCurrentExecutable,
+)
 from mcp_jenkins.jenkins.model.queue import Queue, QueueItem, QueueItemTask
 
 
 @pytest.fixture(autouse=True)
 def mock_session(mocker):
     mock_session = mocker.Mock()
-    mocker.patch('mcp_jenkins.jenkins.rest_client.requests.Session', autospec=True, return_value=mock_session)
+    mocker.patch(
+        'mcp_jenkins.jenkins.rest_client.requests.Session',
+        autospec=True,
+        return_value=mock_session,
+    )
     yield mock_session
 
 
@@ -19,7 +32,10 @@ def mock_session(mocker):
 def jenkins(mocker):
     jenkins = Jenkins(url='https://example.com/', username='username', password='password')
     mocker.patch.object(
-        Jenkins, 'crumb_header', new_callable=mocker.PropertyMock, return_value={'Jenkins-Crumb': 'crumb-value'}
+        Jenkins,
+        'crumb_header',
+        new_callable=mocker.PropertyMock,
+        return_value={'Jenkins-Crumb': 'crumb-value'},
     )
     return jenkins
 
@@ -62,19 +78,32 @@ class TestCrumbHeader:
         mocker.patch.object(
             jenkins,
             'request',
-            return_value=mocker.Mock(json=lambda: {'crumbRequestField': 'Jenkins-Crumb', 'crumb': 'crumb-value'}),
+            return_value=mocker.Mock(
+                json=lambda: {
+                    'crumbRequestField': 'Jenkins-Crumb',
+                    'crumb': 'crumb-value',
+                }
+            ),
         )
         assert jenkins.crumb_header == {'Jenkins-Crumb': 'crumb-value'}
 
     def test_crumb_header_404(self, mocker):
         jenkins = Jenkins(url='https://example.com/', username='username', password='password')
-        mocker.patch.object(jenkins, 'request', side_effect=HTTPError(response=mocker.Mock(status_code=404)))
+        mocker.patch.object(
+            jenkins,
+            'request',
+            side_effect=HTTPError(response=mocker.Mock(status_code=404)),
+        )
 
         assert jenkins.crumb_header == {}
 
     def test_crumb_header_other_http_error(self, mocker):
         jenkins = Jenkins(url='https://example.com/', username='username', password='password')
-        mocker.patch.object(jenkins, 'request', side_effect=HTTPError(response=mocker.Mock(status_code=500)))
+        mocker.patch.object(
+            jenkins,
+            'request',
+            side_effect=HTTPError(response=mocker.Mock(status_code=500)),
+        )
 
         with pytest.raises(HTTPError):
             _ = jenkins.crumb_header
@@ -83,7 +112,10 @@ class TestCrumbHeader:
 def test_parse_fullname(jenkins):
     assert jenkins._parse_fullname('job-name') == ('', 'job-name')
     assert jenkins._parse_fullname('folder/job-name') == ('job/folder/', 'job-name')
-    assert jenkins._parse_fullname('folder/subfolder/job-name') == ('job/folder/job/subfolder/', 'job-name')
+    assert jenkins._parse_fullname('folder/subfolder/job-name') == (
+        'job/folder/job/subfolder/',
+        'job-name',
+    )
 
 
 class TestView:
@@ -209,7 +241,9 @@ class TestQueue:
                     url='https://example.com/queue/item/1/',
                     why='Waiting for next available executor',
                     task=QueueItemTask(
-                        fullDisplayName='Example Job', name='example-job', url='https://example.com/job/example-job/'
+                        fullDisplayName='Example Job',
+                        name='example-job',
+                        url='https://example.com/job/example-job/',
                     ),
                 )
             ],
@@ -237,7 +271,9 @@ class TestQueue:
             url='https://example.com/queue/item/1/',
             why='Waiting for next available executor',
             task=QueueItemTask(
-                fullDisplayName='Example Job', name='example-job', url='https://example.com/job/example-job/'
+                fullDisplayName='Example Job',
+                name='example-job',
+                url='https://example.com/job/example-job/',
             ),
         )
 
@@ -414,10 +450,68 @@ class TestBuild:
             ),
         )
 
-    def test_get_build_console_output(self, jenkins, mock_session, mocker):
-        mock_session.request.return_value = mocker.Mock(text='Console output here')
+    def _mock_console_lines(self, mock_session, mocker, lines: list[str]):
+        mock_response = mocker.Mock()
+        mock_response.iter_lines.return_value = iter(lines)
+        mock_session.get.return_value = mock_response
+        return mock_response
 
-        assert jenkins.get_build_console_output(fullname='example-job', number=1) == 'Console output here'
+    def test_get_build_console_output(self, jenkins, mock_session, mocker):
+        self._mock_console_lines(mock_session, mocker, ['line1', 'line2', 'line3'])
+
+        assert jenkins.get_build_console_output(fullname='example-job', number=1) == 'line1\nline2\nline3'
+
+        mock_session.get.assert_called_once_with(
+            'https://example.com/job/example-job/1/consoleText',
+            timeout=jenkins.timeout,
+            stream=True,
+        )
+
+    def test_get_build_console_output_with_pattern(self, jenkins, mock_session, mocker):
+        self._mock_console_lines(
+            mock_session,
+            mocker,
+            ['ERROR: something failed', 'INFO: all good', 'ERROR: again'],
+        )
+
+        result = jenkins.get_build_console_output(fullname='example-job', number=1, pattern='ERROR')
+        assert result == 'ERROR: something failed\nERROR: again'
+
+    def test_get_build_console_output_with_offset(self, jenkins, mock_session, mocker):
+        self._mock_console_lines(mock_session, mocker, ['line1', 'line2', 'line3', 'line4'])
+
+        result = jenkins.get_build_console_output(fullname='example-job', number=1, offset=2)
+        assert result == 'line3\nline4'
+
+    def test_get_build_console_output_with_limit(self, jenkins, mock_session, mocker):
+        self._mock_console_lines(mock_session, mocker, ['line1', 'line2', 'line3', 'line4'])
+
+        result = jenkins.get_build_console_output(fullname='example-job', number=1, limit=2)
+        assert result == 'line1\nline2'
+
+    def test_get_build_console_output_with_offset_and_limit(self, jenkins, mock_session, mocker):
+        self._mock_console_lines(mock_session, mocker, ['line1', 'line2', 'line3', 'line4', 'line5'])
+
+        result = jenkins.get_build_console_output(fullname='example-job', number=1, offset=1, limit=2)
+        assert result == 'line2\nline3'
+
+    def test_get_build_console_output_pattern_with_offset_and_limit(self, jenkins, mock_session, mocker):
+        self._mock_console_lines(
+            mock_session,
+            mocker,
+            ['ERROR: a', 'INFO: b', 'ERROR: c', 'ERROR: d', 'ERROR: e'],
+        )
+
+        # pattern filters to: ERROR:a, ERROR:c, ERROR:d, ERROR:e → offset=1 → c,d,e → limit=2 → c,d
+        result = jenkins.get_build_console_output(fullname='example-job', number=1, pattern='ERROR', offset=1, limit=2)
+        assert result == 'ERROR: c\nERROR: d'
+
+    def test_get_build_console_output_stops_early_on_limit(self, jenkins, mock_session, mocker):
+        """Verify response.close() is called when limit is reached mid-stream."""
+        mock_response = self._mock_console_lines(mock_session, mocker, ['a', 'b', 'c', 'd', 'e'])
+
+        jenkins.get_build_console_output(fullname='example-job', number=1, limit=2)
+        mock_response.close.assert_called_once()
 
     def test_stop_build(self, jenkins, mock_session):
         assert jenkins.stop_build(fullname='example-job', number=42) is None
@@ -785,7 +879,11 @@ class TestItem:
         )
 
         assert (
-            jenkins.build_item(fullname='example-job', build_type='buildWithParameters', params={'param1': 'value1'})
+            jenkins.build_item(
+                fullname='example-job',
+                build_type='buildWithParameters',
+                params={'param1': 'value1'},
+            )
             == 123
         )
 

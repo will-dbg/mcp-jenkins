@@ -26,17 +26,38 @@ if sys.platform == 'win32':
     default=True,
     help='Whether to verify SSL certificates, default is True',
 )
-@click.option('--read-only', default=False, is_flag=True, help='Whether to run in read-only mode, default is False')
-@click.option('--tool-regex', default='', help='(Deprecated) Regex pattern to enable specific tools')
+@click.option(
+    '--read-only',
+    default=False,
+    is_flag=True,
+    help='Whether to run in read-only mode, default is False',
+)
+@click.option(
+    '--tool-regex',
+    default='',
+    help='(Deprecated) Regex pattern to enable specific tools',
+)
 @click.option(
     '--jenkins-session-singleton/--no-jenkins-session-singleton',
     default=True,
     help='In the same session, does it share the Jenkins request instance, '
     'significantly reducing the number of instantiations and crumb requests',
 )
-@click.option('--transport', type=click.Choice(['stdio', 'sse', 'streamable-http']), default='stdio')
-@click.option('--host', default='0.0.0.0', help='Host to bind to for SSE or Streamable HTTP transport')  # noqa: S104
-@click.option('--port', default=9887, help='Port to listen on for SSE or Streamable HTTP transport')
+@click.option(
+    '--transport',
+    type=click.Choice(['stdio', 'sse', 'streamable-http']),
+    default='stdio',
+)
+@click.option(
+    '--host',
+    default='0.0.0.0',
+    help='Host to bind to for SSE or Streamable HTTP transport',
+)  # noqa: S104
+@click.option(
+    '--port',
+    default=9887,
+    help='Port to listen on for SSE or Streamable HTTP transport',
+)
 def main(
     jenkins_url: str,
     jenkins_username: str,

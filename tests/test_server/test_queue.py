@@ -28,7 +28,11 @@ async def test_get_all_queue_items(mock_jenkins, mocker):
 @pytest.mark.asyncio
 async def test_get_queue_item(mock_jenkins, mocker):
     q_item = QueueItem(
-        id=1, inQueueSince=1, url='1', why='1', task=QueueItemTask(fullDisplayName='1', name='1', url='1')
+        id=1,
+        inQueueSince=1,
+        url='1',
+        why='1',
+        task=QueueItemTask(fullDisplayName='1', name='1', url='1'),
     )
 
     mock_jenkins.get_queue_item.return_value = q_item

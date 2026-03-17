@@ -51,6 +51,9 @@ def serialize_item(item: dict) -> ItemType:
     target_cls = next((cls for name, cls in cls_map.items() if _class.endswith(name)), UnknownItem)
 
     if 'jobs' in item and isinstance(item['jobs'], list):
-        item = {**item, 'jobs': [serialize_item(job) if isinstance(job, dict) else job for job in item['jobs']]}
+        item = {
+            **item,
+            'jobs': [serialize_item(job) if isinstance(job, dict) else job for job in item['jobs']],
+        }
 
     return target_cls.model_validate(item)

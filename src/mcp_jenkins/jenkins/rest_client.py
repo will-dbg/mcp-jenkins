@@ -11,7 +11,12 @@ from requests.exceptions import HTTPError
 
 from mcp_jenkins.jenkins import rest_endpoint
 from mcp_jenkins.jenkins.model.build import Build, BuildReplay
-from mcp_jenkins.jenkins.model.item import FreeStyleProject, ItemType, Job, serialize_item
+from mcp_jenkins.jenkins.model.item import (
+    FreeStyleProject,
+    ItemType,
+    Job,
+    serialize_item,
+)
 from mcp_jenkins.jenkins.model.node import Node
 from mcp_jenkins.jenkins.model.queue import Queue, QueueItem
 
@@ -260,22 +265,58 @@ class Jenkins:
             The Build object.
         """
         folder, name = self._parse_fullname(fullname)
-        response = self.request('GET', rest_endpoint.BUILD(folder=folder, name=name, number=number, depth=depth))
+        response = self.request(
+            'GET',
+            rest_endpoint.BUILD(folder=folder, name=name, number=number, depth=depth),
+        )
         return Build.model_validate(response.json())
 
-    def get_build_console_output(self, *, fullname: str, number: int) -> str:
+    def get_build_console_output(
+        self,
+        *,
+        fullname: str,
+        number: int,
+        pattern: str | None = None,
+        offset: int = 0,
+        limit: int | None = None,
+    ) -> str:
         """Get the console output of a specific build.
 
         Args:
             fullname: The fullname of the job.
             number: The build number.
+            pattern: Optional regex pattern to filter lines (only matching lines are returned).
+            offset: Number of lines to skip from the beginning (after pattern filtering).
+            limit: Maximum number of lines to return (after pattern filtering and offset).
 
         Returns:
             The console output as a string.
         """
         folder, name = self._parse_fullname(fullname)
-        response = self.request('GET', rest_endpoint.BUILD_CONSOLE_OUTPUT(folder=folder, name=name, number=number))
-        return response.text
+        compiled = re.compile(pattern) if pattern else None
+
+        response = self._session.get(
+            self.endpoint_url(rest_endpoint.BUILD_CONSOLE_OUTPUT(folder=folder, name=name, number=number)),
+            timeout=self.timeout,
+            stream=True,
+        )
+        response.raise_for_status()
+
+        matched: list[str] = []
+        skipped = 0
+
+        for raw_line in response.iter_lines(decode_unicode=True):
+            if compiled is not None and not compiled.search(raw_line):
+                continue
+            if skipped < offset:
+                skipped += 1
+                continue
+            matched.append(raw_line)
+            if limit is not None and len(matched) >= limit:
+                break
+
+        response.close()
+        return '\n'.join(matched)
 
     def stop_build(self, *, fullname: str, number: int) -> None:
         """Stop a running Jenkins build.
@@ -319,7 +360,10 @@ class Jenkins:
             A dictionary representing the build parameters.
         """
         folder, name = self._parse_fullname(fullname)
-        response = self.request('GET', rest_endpoint.BUILD_PARAMETERS(folder=folder, name=name, number=number))
+        response = self.request(
+            'GET',
+            rest_endpoint.BUILD_PARAMETERS(folder=folder, name=name, number=number),
+        )
 
         for action in response.json().get('actions', []):
             if 'parameters' in action:
@@ -339,7 +383,8 @@ class Jenkins:
         """
         folder, name = self._parse_fullname(fullname)
         response = self.request(
-            'GET', rest_endpoint.BUILD_TEST_REPORT(folder=folder, name=name, number=number, depth=depth)
+            'GET',
+            rest_endpoint.BUILD_TEST_REPORT(folder=folder, name=name, number=number, depth=depth),
         )
         return response.json()
 
@@ -370,7 +415,11 @@ class Jenkins:
         Returns:
             A list of ItemType objects representing the items.
         """
-        query = reduce(lambda q, _: f'jobs[url,color,name,{q}]', range(folder_depth_per_request), 'jobs')
+        query = reduce(
+            lambda q, _: f'jobs[url,color,name,{q}]',
+            range(folder_depth_per_request),
+            'jobs',
+        )
         response = self.request('GET', rest_endpoint.ITEMS(folder='', query=query))
 
         items = []
@@ -476,7 +525,11 @@ class Jenkins:
         return result
 
     def build_item(
-        self, *, fullname: str, build_type: Literal['build', 'buildWithParameters'], params: dict | None = None
+        self,
+        *,
+        fullname: str,
+        build_type: Literal['build', 'buildWithParameters'],
+        params: dict | None = None,
     ) -> int:
         """Trigger a build for a specific item.
 
@@ -493,7 +546,9 @@ class Jenkins:
         """
         folder, name = self._parse_fullname(fullname)
         response = self.request(
-            'POST', rest_endpoint.ITEM_BUILD(folder=folder, name=name, build_type=build_type), params=params
+            'POST',
+            rest_endpoint.ITEM_BUILD(folder=folder, name=name, build_type=build_type),
+            params=params,
         )
 
         return int(response.headers.get('Location', None).strip('/').split('/')[-1])

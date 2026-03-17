@@ -6,7 +6,11 @@ from mcp_jenkins.core import AuthMiddleware
 class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_call(self, mocker):
-        mock_app, mock_receive, mock_send = mocker.AsyncMock(), mocker.AsyncMock(), mocker.AsyncMock()
+        mock_app, mock_receive, mock_send = (
+            mocker.AsyncMock(),
+            mocker.AsyncMock(),
+            mocker.AsyncMock(),
+        )
         middleware = AuthMiddleware(mock_app)
 
         scope = {
@@ -40,7 +44,11 @@ class TestAuthMiddleware:
 
     @pytest.mark.asyncio
     async def test_call_missing_headers(self, mocker):
-        mock_app, mock_receive, mock_send = mocker.AsyncMock(), mocker.AsyncMock(), mocker.AsyncMock()
+        mock_app, mock_receive, mock_send = (
+            mocker.AsyncMock(),
+            mocker.AsyncMock(),
+            mocker.AsyncMock(),
+        )
         middleware = AuthMiddleware(mock_app)
 
         scope = {
@@ -64,7 +72,11 @@ class TestAuthMiddleware:
 
     @pytest.mark.asyncio
     async def test_call_non_http(self, mocker):
-        mock_app, mock_receive, mock_send = mocker.AsyncMock(), mocker.AsyncMock(), mocker.AsyncMock()
+        mock_app, mock_receive, mock_send = (
+            mocker.AsyncMock(),
+            mocker.AsyncMock(),
+            mocker.AsyncMock(),
+        )
         middleware = AuthMiddleware(mock_app)
 
         scope = {
