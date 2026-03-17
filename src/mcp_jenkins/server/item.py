@@ -99,7 +99,7 @@ async def build_item(
 
 
 @mcp.tool(tags=['read'])
-async def get_job_parameters(ctx: Context, fullname: str) -> list[dict]:
+async def get_item_parameters(ctx: Context, fullname: str) -> list[dict]:
     """Get the parameter definitions of a Jenkins job
 
     Args:

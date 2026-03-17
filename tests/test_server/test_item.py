@@ -80,7 +80,7 @@ async def test_build_item(mock_jenkins, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_job_parameters(mock_jenkins, mocker):
+async def test_get_item_parameters(mock_jenkins, mocker):
     mock_jenkins.get_item_config.return_value = """
         <project>
           <properties>
@@ -102,7 +102,7 @@ async def test_get_job_parameters(mock_jenkins, mocker):
         </project>
     """
 
-    assert await item.get_job_parameters(mocker.Mock(), fullname='job1') == [
+    assert await item.get_item_parameters(mocker.Mock(), fullname='job1') == [
         {
             'name': 'BRANCH',
             'type': 'hudson.model.StringParameterDefinition',
@@ -121,14 +121,14 @@ async def test_get_job_parameters(mock_jenkins, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_job_parameters_no_params(mock_jenkins, mocker):
+async def test_get_item_parameters_no_params(mock_jenkins, mocker):
     mock_jenkins.get_item_config.return_value = '<project><properties/></project>'
 
-    assert await item.get_job_parameters(mocker.Mock(), fullname='job1') == []
+    assert await item.get_item_parameters(mocker.Mock(), fullname='job1') == []
 
 
 @pytest.mark.asyncio
-async def test_get_job_parameters_missing_fields(mock_jenkins, mocker):
+async def test_get_item_parameters_missing_fields(mock_jenkins, mocker):
     mock_jenkins.get_item_config.return_value = """
         <project>
           <properties>
@@ -143,7 +143,7 @@ async def test_get_job_parameters_missing_fields(mock_jenkins, mocker):
         </project>
     """
 
-    assert await item.get_job_parameters(mocker.Mock(), fullname='job1') == [
+    assert await item.get_item_parameters(mocker.Mock(), fullname='job1') == [
         {
             'name': 'TOKEN',
             'type': 'hudson.model.StringParameterDefinition',
